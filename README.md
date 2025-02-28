@@ -19,8 +19,8 @@ Add this package to your Flutter project by adding the following to your `pubspe
 dependencies:
   flutter_sf380r_printer:
     git:
-      url: https://github.com/yourusername/flutter_sf380r_printer.git
-      ref: main
+      url: https://github.com/AmarKamal/flutter_sf380r_printer.git 
+      ref: main      
 ```
 
 Or if you're using a specific version:
