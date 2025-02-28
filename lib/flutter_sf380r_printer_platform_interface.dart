@@ -32,16 +32,23 @@ abstract class FlutterSf380rPrinterPlatform extends PlatformInterface {
   Future<bool> disconnect() {
     throw UnimplementedError('disconnect() has not been implemented.');
   }
-
-  Future<bool> printText(String text) {
+  
+  Future<bool> printText(
+    String text, {
+    int alignment = 0,
+    bool bold = false,
+    bool underline = false,
+    bool doubleWidth = false,
+    bool doubleHeight = false,
+    bool smallFont = false,
+  }) {
     throw UnimplementedError('printText() has not been implemented.');
   }
 
   Future<bool> printQRCode(
     String content, {
     int moduleSize = 4,
-    int height = 200,
-    int position = 0,
+    int alignment = 0
   }) {
     throw UnimplementedError('printQRCode() has not been implemented.');
   }
@@ -52,11 +59,12 @@ abstract class FlutterSf380rPrinterPlatform extends PlatformInterface {
     int width = 2,
     int height = 100,
     int position = 0,
+    int alignment = 0,
   }) {
     throw UnimplementedError('printBarcode() has not been implemented.');
   }
 
-  Future<bool> printImage(Uint8List imageBytes) {
+  Future<bool> printImage(Uint8List imageBytes,{int alignment = 0}) {
     throw UnimplementedError('printImage() has not been implemented.');
   }
 
@@ -72,24 +80,11 @@ abstract class FlutterSf380rPrinterPlatform extends PlatformInterface {
     throw UnimplementedError('getPrinterStatus() has not been implemented.');
   }
 
-  Future<bool> setTextAlignment(int alignment) {
-  throw UnimplementedError('setTextAlignment() has not been implemented.');
-  }
-
   Future<bool> setEncoding(String encoding) {
     throw UnimplementedError('setEncoding() has not been implemented.');
   }
-
-  Future<bool> setCharacterMultiple(int x, int y) {
-    throw UnimplementedError('setCharacterMultiple() has not been implemented.');
-  }
-
-  Future<bool> setPrintModel(bool smallFont, bool isBold, bool isDoubleHeight, 
-                          bool isDoubleWidth, bool isUnderLine) {
-    throw UnimplementedError('setPrintModel() has not been implemented.');
-  }
-
-
+  
+  
   // Register event handlers
   void registerPrinterConnectedCallback(Function callback) {
     throw UnimplementedError('registerPrinterConnectedCallback() has not been implemented.');
@@ -102,6 +97,10 @@ abstract class FlutterSf380rPrinterPlatform extends PlatformInterface {
   void registerPrinterDisconnectedCallback(Function callback) {
     throw UnimplementedError('registerPrinterDisconnectedCallback() has not been implemented.');
   }
+
+
+
+
 }
 
 // Bluetooth device model

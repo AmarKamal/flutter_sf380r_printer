@@ -69,6 +69,13 @@ class FlutterSf380rPrinterPlugin: FlutterPlugin, MethodCallHandler {
 
           // Get paired devices
           val pairedDevices = bluetoothAdapter.bondedDevices
+
+          // Clear and add devices to your deviceList
+          deviceList.clear() // Clear previous devices
+          for (device in pairedDevices) {
+            deviceList.addDevice(device)
+          }
+
           val devicesList = pairedDevices.map { device ->
             mapOf(
                     "name" to (device.name ?: "Unknown"),
@@ -115,39 +122,45 @@ class FlutterSf380rPrinterPlugin: FlutterPlugin, MethodCallHandler {
         }
       }
 
-      "setTextAlignment" -> {
-        val alignment = call.argument<Int>("alignment") ?: 0
-        try {
-          val success = bluetoothOperation.setTextAlignment(alignment)
-          result.success(success)
-        } catch (e: Exception) {
-          result.error("ALIGNMENT_ERROR", e.message, null)
-        }
-      }
 
       "printText" -> {
         val text = call.argument<String>("text")
+        val alignment = call.argument<Int>("alignment") ?: 0
+        val bold = call.argument<Boolean>("bold") ?: false
+        val underline = call.argument<Boolean>("underline") ?: false
+        val doubleWidth = call.argument<Boolean>("doubleWidth") ?: false
+        val doubleHeight = call.argument<Boolean>("doubleHeight") ?: false
+        val smallFont = call.argument<Boolean>("smallFont") ?: false
+
         if (text == null) {
           result.error("INVALID_ARGUMENT", "Text is required", null)
           return
         }
 
         try {
-          val success = bluetoothOperation.printText(text)
+          val success = bluetoothOperation.printText(
+                  text,
+                  alignment,
+                  bold,
+                  underline,
+                  doubleWidth,
+                  doubleHeight,
+                  smallFont
+          )
           result.success(success)
         } catch (e: Exception) {
           result.error("PRINT_ERROR", e.message, null)
         }
       }
 
+
       "printQRCode" -> {
         val content = call.argument<String>("content") ?: ""
         val moduleSize = call.argument<Int>("moduleSize") ?: 4
-        val height = call.argument<Int>("height") ?: 200
-        val position = call.argument<Int>("position") ?: 0
+        val alignment = call.argument<Int>("alignment") ?: 0
 
         try {
-          val success = bluetoothOperation.printQRCode(content, moduleSize, height, position)
+          val success = bluetoothOperation.printQRCode(content, moduleSize,alignment)
           result.success(success)
         } catch (e: Exception) {
           result.error("QR_CODE_ERROR", e.message, null)
@@ -160,9 +173,10 @@ class FlutterSf380rPrinterPlugin: FlutterPlugin, MethodCallHandler {
         val width = call.argument<Int>("width") ?: 2
         val height = call.argument<Int>("height") ?: 100
         val position = call.argument<Int>("position") ?: 0
+        val alignment = call.argument<Int>("alignment") ?: 0
 
         try {
-          val success = bluetoothOperation.printBarcode(content, type, width, height, position)
+          val success = bluetoothOperation.printBarcode(content, type, width, height, position,alignment)
           result.success(success)
         } catch (e: Exception) {
           result.error("BARCODE_ERROR", e.message, null)
@@ -171,13 +185,15 @@ class FlutterSf380rPrinterPlugin: FlutterPlugin, MethodCallHandler {
 
       "printImage" -> {
         val base64Image = call.argument<String>("base64Image")
+        val alignment  = call.argument<Int>("alignment") ?: 0 // Default to left alignment
+
         if (base64Image == null) {
           result.error("INVALID_ARGUMENT", "Image data is required", null)
           return
         }
 
         try {
-          val success = bluetoothOperation.printImage(base64Image)
+          val success = bluetoothOperation.printImage(base64Image,alignment)
           result.success(success)
         } catch (e: Exception) {
           result.error("IMAGE_ERROR", e.message, null)
@@ -223,34 +239,6 @@ class FlutterSf380rPrinterPlugin: FlutterPlugin, MethodCallHandler {
           result.success(success)
         } catch (e: Exception) {
           result.error("ENCODING_ERROR", e.message, null)
-        }
-      }
-
-      "setCharacterMultiple" -> {
-        val x = call.argument<Int>("x") ?: 0
-        val y = call.argument<Int>("y") ?: 0
-        try {
-          val success = bluetoothOperation.setCharacterMultiple(x, y)
-          result.success(success)
-        } catch (e: Exception) {
-          result.error("CHARACTER_MULTIPLE_ERROR", e.message, null)
-        }
-      }
-
-      "setPrintModel" -> {
-        val smallFont = call.argument<Boolean>("smallFont") ?: false
-        val isBold = call.argument<Boolean>("isBold") ?: false
-        val isDoubleHeight = call.argument<Boolean>("isDoubleHeight") ?: false
-        val isDoubleWidth = call.argument<Boolean>("isDoubleWidth") ?: false
-        val isUnderLine = call.argument<Boolean>("isUnderLine") ?: false
-
-        try {
-          val success = bluetoothOperation.setPrintModel(
-                  smallFont, isBold, isDoubleHeight, isDoubleWidth, isUnderLine
-          )
-          result.success(success)
-        } catch (e: Exception) {
-          result.error("PRINT_MODEL_ERROR", e.message, null)
         }
       }
 

@@ -16,4 +16,9 @@ class BluetoothDeviceList {
     fun clear() {
         deviceList.clear()
     }
+
+    // Add a function to find a device by address
+    fun findDeviceByAddress(address: String): BluetoothDevice? {
+        return deviceList.find { it.address == address }
+    }
 }

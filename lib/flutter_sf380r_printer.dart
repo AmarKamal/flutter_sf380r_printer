@@ -1,12 +1,14 @@
+// ignore_for_file: constant_identifier_names
+
 import 'dart:async';
-import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+
 
 import 'flutter_sf380r_printer_platform_interface.dart';
 export 'flutter_sf380r_printer_platform_interface.dart' show BluetoothDevice;
 
 class FlutterSf380rPrinter {
    
-
   // Alignment constants
   static const int ALIGN_LEFT = 0;
   static const int ALIGN_CENTER = 1;
@@ -71,21 +73,36 @@ class FlutterSf380rPrinter {
     return FlutterSf380rPrinterPlatform.instance.disconnect();
   }
 
-  Future<bool> printText(String text) {
-    return FlutterSf380rPrinterPlatform.instance.printText(text);
+  Future<bool> printText(
+    String text, {
+    int alignment = ALIGN_LEFT,
+    bool bold = false,
+    bool underline = false,
+    bool doubleWidth = false,
+    bool doubleHeight = false,
+    bool smallFont = false,
+  }) {
+    return FlutterSf380rPrinterPlatform.instance.printText(
+      text,
+      alignment: alignment,
+      bold: bold,
+      underline: underline,
+      doubleWidth: doubleWidth,
+      doubleHeight: doubleHeight,
+      smallFont: smallFont,
+    );
   }
 
   Future<bool> printQRCode(
     String content, {
-    int moduleSize = 4,
-    int height = 200,
-    int position = POSITION_NONE,
+    int moduleSize = 4,    
+    int alignment = ALIGN_LEFT,
   }) {
     return FlutterSf380rPrinterPlatform.instance.printQRCode(
       content,
       moduleSize: moduleSize,
-      height: height,
-      position: position,
+      alignment: alignment,
+      
     );
   }
 
@@ -95,6 +112,7 @@ class FlutterSf380rPrinter {
     int width = 2,
     int height = 100,
     int position = POSITION_NONE,
+    int alignment = ALIGN_LEFT,
   }) {
     return FlutterSf380rPrinterPlatform.instance.printBarcode(
       content,
@@ -102,11 +120,12 @@ class FlutterSf380rPrinter {
       width: width,
       height: height,
       position: position,
+      alignment: alignment,
     );
   }
 
-  Future<bool> printImage(Uint8List imageBytes) {
-    return FlutterSf380rPrinterPlatform.instance.printImage(imageBytes);
+  Future<bool> printImage(Uint8List imageBytes, {int alignment = ALIGN_LEFT}) {
+    return FlutterSf380rPrinterPlatform.instance.printImage(imageBytes, alignment: alignment);
   }
 
   Future<bool> printTable(
@@ -125,27 +144,10 @@ class FlutterSf380rPrinter {
     return FlutterSf380rPrinterPlatform.instance.getPrinterStatus();
   }
 
-  Future<bool> setTextAlignment(int alignment) {
-  return FlutterSf380rPrinterPlatform.instance.setTextAlignment(alignment);
-  }
-
   Future<bool> setEncoding(String encoding) {
     return FlutterSf380rPrinterPlatform.instance.setEncoding(encoding);
   }
 
-  Future<bool> setCharacterMultiple(int x, int y) {
-    return FlutterSf380rPrinterPlatform.instance.setCharacterMultiple(x, y);
-  }
-
-  Future<bool> setPrintModel(bool smallFont, bool isBold, bool isDoubleHeight, 
-                          bool isDoubleWidth, bool isUnderLine) {
-    return FlutterSf380rPrinterPlatform.instance.setPrintModel(
-      smallFont, isBold, isDoubleHeight, isDoubleWidth, isUnderLine
-    );
-
-  }
-
-  
 
   // Helper methods
   void setCallbacks({
@@ -216,7 +218,7 @@ class FlutterSf380rPrinter {
     
     return true;
   } catch (e) {
-    print('Error printing receipt: $e');
+    debugPrint('Error printing receipt: $e');
     return false;
   }
 }
