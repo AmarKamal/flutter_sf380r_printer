@@ -42,20 +42,36 @@ class FlutterSf380rPrinter {
   Function? onPrinterConnectionFailed;
   Function? onPrinterDisconnected;
 
-  FlutterSf380rPrinter() {
-    if (onPrinterConnected != null) {
-      FlutterSf380rPrinterPlatform.instance.registerPrinterConnectedCallback(onPrinterConnected!);
-    }
-    
-    if (onPrinterConnectionFailed != null) {
-      FlutterSf380rPrinterPlatform.instance.registerPrinterConnectionFailedCallback(onPrinterConnectionFailed!);
-    }
-    
-    if (onPrinterDisconnected != null) {
-      FlutterSf380rPrinterPlatform.instance.registerPrinterDisconnectedCallback(onPrinterDisconnected!);
-    }
-  }
+  Function(BluetoothDevice)? onDeviceDiscovered;
+  Function()? onScanFinished;
+  Function(String, bool)? onPairingStatus;
 
+
+  FlutterSf380rPrinter() {
+  if (onPrinterConnected != null) {
+    FlutterSf380rPrinterPlatform.instance.registerPrinterConnectedCallback(onPrinterConnected!);
+  }
+  
+  if (onPrinterConnectionFailed != null) {
+    FlutterSf380rPrinterPlatform.instance.registerPrinterConnectionFailedCallback(onPrinterConnectionFailed!);
+  }
+  
+  if (onPrinterDisconnected != null) {
+    FlutterSf380rPrinterPlatform.instance.registerPrinterDisconnectedCallback(onPrinterDisconnected!);
+  }
+  
+  if (onDeviceDiscovered != null) {
+    FlutterSf380rPrinterPlatform.instance.registerDeviceDiscoveredCallback(onDeviceDiscovered!);
+  }
+  
+  if (onScanFinished != null) {
+    FlutterSf380rPrinterPlatform.instance.registerScanFinishedCallback(onScanFinished!);
+  }
+  
+  if (onPairingStatus != null) {
+    FlutterSf380rPrinterPlatform.instance.registerPairingStatusCallback(onPairingStatus!);
+  }
+}
 
   Future<String?> getPlatformVersion() {
     return FlutterSf380rPrinterPlatform.instance.getPlatformVersion();
@@ -148,30 +164,66 @@ class FlutterSf380rPrinter {
     return FlutterSf380rPrinterPlatform.instance.setEncoding(encoding);
   }
 
+  // Start scanning for Bluetooth devices
+  Future<bool> startScan({Duration timeout = const Duration(seconds: 10)}) {
+    return FlutterSf380rPrinterPlatform.instance.startScan(timeout: timeout);
+  }
+
+  // Stop scanning for Bluetooth devices
+  Future<bool> stopScan() {
+    return FlutterSf380rPrinterPlatform.instance.stopScan();
+  }
+
+  // Pair with a Bluetooth device
+  Future<bool> pairDevice(String address) {
+    return FlutterSf380rPrinterPlatform.instance.pairDevice(address);
+  }
+
+  // Check if a device is paired
+  Future<bool> isDevicePaired(String address) {
+    return FlutterSf380rPrinterPlatform.instance.isDevicePaired(address);
+  }
 
   // Helper methods
-  void setCallbacks({
-    Function? onConnected,
-    Function? onConnectionFailed,
-    Function? onDisconnected,
-  }) {
-    if (onConnected != null) {
-      onPrinterConnected = onConnected;
-      FlutterSf380rPrinterPlatform.instance.registerPrinterConnectedCallback(onConnected);
-    }
-    
-    if (onConnectionFailed != null) {
-      onPrinterConnectionFailed = onConnectionFailed;
-      FlutterSf380rPrinterPlatform.instance.registerPrinterConnectionFailedCallback(onConnectionFailed);
-    }
-    
-    if (onDisconnected != null) {
-      onPrinterDisconnected = onDisconnected;
-      FlutterSf380rPrinterPlatform.instance.registerPrinterDisconnectedCallback(onDisconnected);
-    }
-
-
+  // Helper methods
+void setCallbacks({
+  Function? onConnected,
+  Function? onConnectionFailed,
+  Function? onDisconnected,
+  Function(BluetoothDevice)? onDiscovered,
+  Function()? onScanComplete,
+  Function(String, bool)? onPaired,
+}) {
+  if (onConnected != null) {
+    onPrinterConnected = onConnected;
+    FlutterSf380rPrinterPlatform.instance.registerPrinterConnectedCallback(onConnected);
   }
+  
+  if (onConnectionFailed != null) {
+    onPrinterConnectionFailed = onConnectionFailed;
+    FlutterSf380rPrinterPlatform.instance.registerPrinterConnectionFailedCallback(onConnectionFailed);
+  }
+  
+  if (onDisconnected != null) {
+    onPrinterDisconnected = onDisconnected;
+    FlutterSf380rPrinterPlatform.instance.registerPrinterDisconnectedCallback(onDisconnected);
+  }
+  
+  if (onDiscovered != null) {
+    onDeviceDiscovered = onDiscovered;
+    FlutterSf380rPrinterPlatform.instance.registerDeviceDiscoveredCallback(onDiscovered);
+  }
+  
+  if (onScanComplete != null) {
+    onScanFinished = onScanComplete;
+    FlutterSf380rPrinterPlatform.instance.registerScanFinishedCallback(onScanComplete);
+  }
+  
+  if (onPaired != null) {
+    onPairingStatus = onPaired;
+    FlutterSf380rPrinterPlatform.instance.registerPairingStatusCallback(onPaired);
+  }
+}
 
   // Additional helper methods
 

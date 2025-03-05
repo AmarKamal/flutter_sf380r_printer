@@ -37,6 +37,25 @@ class MethodChannelFlutterSf380rPrinter extends FlutterSf380rPrinterPlatform {
           _onPrinterDisconnectedCallback!();
         }
         break;
+      case 'onDeviceDiscovered':
+      if (_onDeviceDiscoveredCallback != null) {
+        final Map<dynamic, dynamic> deviceMap = call.arguments;
+        final device = BluetoothDevice.fromMap(deviceMap);
+        _onDeviceDiscoveredCallback!(device);
+      }
+        break;
+    case 'onScanFinished':
+      if (_onScanFinishedCallback != null) {
+        _onScanFinishedCallback!();
+      }
+        break;
+    case 'onPairingStatus':
+      if (_onPairingStatusCallback != null) {
+        final String address = call.arguments['address'];
+        final bool success = call.arguments['success'];
+        _onPairingStatusCallback!(address, success);
+      }
+        break;
       default:
         throw MissingPluginException();
     }
@@ -65,8 +84,6 @@ class MethodChannelFlutterSf380rPrinter extends FlutterSf380rPrinterPlatform {
   Future<bool> disconnect() async {
     return await methodChannel.invokeMethod('disconnect');
   }
-
-
 
   @override
   Future<bool> printText(
@@ -164,116 +181,58 @@ class MethodChannelFlutterSf380rPrinter extends FlutterSf380rPrinterPlatform {
     _onPrinterDisconnectedCallback = callback;
   }
 
-  // @override
-  // Future<bool> setTextAlignment(int alignment) async {
-  //   return await methodChannel.invokeMethod('setTextAlignment', {
-  //     'alignment': alignment,
-  //   });
-  // }
-
-  // @override
-  // Future<bool> printWithAlignment(String text, int alignment) async {
-  //   return await methodChannel.invokeMethod('printWithAlignment', {
-  //     'text': text,
-  //     'alignment': alignment,
-  //   });
-  // }
-
   @override
   Future<bool> setEncoding(String encoding) async {
     return await methodChannel.invokeMethod('setEncoding', {
       'encoding': encoding,
     });
   }
-
-  // @override
-  // Future<bool> setCharacterMultiple(int x, int y) async {
-  //   return await methodChannel.invokeMethod('setCharacterMultiple', {
-  //     'x': x,
-  //     'y': y,
-  //   });
-  // }
-
-  // @override
-  // Future<bool> printBoldText(String text, {bool bold = true}) async {
-  //   return await methodChannel.invokeMethod('printBoldText', {
-  //     'text': text,
-  //     'bold': bold,
-  //   });
-  // }
-
-  // @override
-  // Future<bool> printUnderlinedText(String text, {bool underline = true}) async {
-  //   return await methodChannel.invokeMethod('printUnderlinedText', {
-  //     'text': text,
-  //     'underline': underline,
-  //   });
-  // }
-
-  // @override
-  // Future<bool> printSizedText(
-  //   String text, {
-  //   int widthScale = 0,
-  //   int heightScale = 0,
-  // }) async {
-  //   return await methodChannel.invokeMethod('printSizedText', {
-  //     'text': text,
-  //     'widthScale': widthScale,
-  //     'heightScale': heightScale,
-  //   });
-  // }
-
-  // @override
-  // Future<bool> printFormattedText(
-  //   String text, {
-  //   int alignment = 0,
-  //   bool bold = false,
-  //   bool underline = false,
-  //   bool doubleHeight = false,
-  //   bool doubleWidth = false,
-  //   bool smallFont = false,
-  // }) async {
-  //   return await methodChannel.invokeMethod('printFormattedText', {
-  //     'text': text,
-  //     'alignment': alignment,
-  //     'bold': bold,
-  //     'underline': underline,
-  //     'doubleHeight': doubleHeight,
-  //     'doubleWidth': doubleWidth,
-  //     'smallFont': smallFont,
-  //   });
-  // }
-
-  // @override
-  // Future<bool> setPrintModel(bool smallFont, bool isBold, bool isDoubleHeight, 
-  //                         bool isDoubleWidth, bool isUnderLine) async {
-  //   return await methodChannel.invokeMethod('setPrintModel', {
-  //     'smallFont': smallFont,
-  //     'isBold': isBold,
-  //     'isDoubleHeight': isDoubleHeight,
-  //     'isDoubleWidth': isDoubleWidth,
-  //     'isUnderLine': isUnderLine,
-  //   });
-  // }
-
-  // @override
-  // Future<bool> printWithFontProperty(
-  //   String text, {
-  //   bool bold = false,
-  //   bool italic = false,
-  //   bool underline = false,
-  //   int size = 24,
-  //   String? fontFamily,
-  // }) async {
-  //   return await methodChannel.invokeMethod('printWithFontProperty', {
-  //     'text': text,
-  //     'bold': bold,
-  //     'italic': italic,
-  //     'underline': underline,
-  //     'size': size,
-  //     'fontFamily': fontFamily,
-  //   });
-  // }
-
   
+
+
+Function(BluetoothDevice)? _onDeviceDiscoveredCallback;
+Function()? _onScanFinishedCallback;
+Function(String, bool)? _onPairingStatusCallback;
+
+@override
+Future<bool> startScan({Duration timeout = const Duration(seconds: 10)}) async {
+  return await methodChannel.invokeMethod('startScan', {
+    'timeout': timeout.inMilliseconds,
+  });
+}
+
+@override
+Future<bool> stopScan() async {
+  return await methodChannel.invokeMethod('stopScan');
+}
+
+@override
+Future<bool> pairDevice(String address) async {
+  return await methodChannel.invokeMethod('pairDevice', {
+    'address': address,
+  });
+}
+
+@override
+Future<bool> isDevicePaired(String address) async {
+  return await methodChannel.invokeMethod('isDevicePaired', {
+    'address': address,
+  });
+}
+
+@override
+void registerDeviceDiscoveredCallback(Function(BluetoothDevice) callback) {
+  _onDeviceDiscoveredCallback = callback;
+}
+
+@override
+void registerScanFinishedCallback(Function() callback) {
+  _onScanFinishedCallback = callback;
+}
+
+@override
+void registerPairingStatusCallback(Function(String, bool) callback) {
+  _onPairingStatusCallback = callback;
+}
+
 }

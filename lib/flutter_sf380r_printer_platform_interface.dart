@@ -84,6 +84,44 @@ abstract class FlutterSf380rPrinterPlatform extends PlatformInterface {
     throw UnimplementedError('setEncoding() has not been implemented.');
   }
   
+
+
+  
+  // Start scanning for Bluetooth devices
+  Future<bool> startScan({Duration timeout = const Duration(seconds: 10)}) {
+    throw UnimplementedError('startScan() has not been implemented.');
+  }
+
+  // Stop scanning for Bluetooth devices
+  Future<bool> stopScan() {
+    throw UnimplementedError('stopScan() has not been implemented.');
+  }
+
+  // Pair with a Bluetooth device
+  Future<bool> pairDevice(String address) {
+    throw UnimplementedError('pairDevice() has not been implemented.');
+  }
+
+  // Check if a device is paired
+  Future<bool> isDevicePaired(String address) {
+    throw UnimplementedError('isDevicePaired() has not been implemented.');
+  }
+
+  // Register callback for discovered devices
+  void registerDeviceDiscoveredCallback(Function(BluetoothDevice) callback) {
+    throw UnimplementedError('registerDeviceDiscoveredCallback() has not been implemented.');
+  }
+
+  // Register callback for scan finished
+  void registerScanFinishedCallback(Function() callback) {
+    throw UnimplementedError('registerScanFinishedCallback() has not been implemented.');
+  }
+
+  // Register callback for pairing status
+  void registerPairingStatusCallback(Function(String, bool) callback) {
+    throw UnimplementedError('registerPairingStatusCallback() has not been implemented.');
+  }
+
   
   // Register event handlers
   void registerPrinterConnectedCallback(Function callback) {
@@ -97,7 +135,6 @@ abstract class FlutterSf380rPrinterPlatform extends PlatformInterface {
   void registerPrinterDisconnectedCallback(Function callback) {
     throw UnimplementedError('registerPrinterDisconnectedCallback() has not been implemented.');
   }
-
 
 
 

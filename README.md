@@ -4,7 +4,9 @@ A Flutter plugin for connecting to and printing with SF380R and compatible therm
 
 ## Features
 
-- Bluetooth device scanning and connection
+- Bluetooth device scanning and discovery (including unpaired devices)
+- Bluetooth device pairing capability
+- Bluetooth printer connection management
 - Text printing with formatting options (bold, underline, font size, alignment)
 - QR Code and Barcode printing with customizable settings
 - Image printing
@@ -80,6 +82,22 @@ class _MyAppState extends State<MyApp> {
           // Handle disconnection
         });
       },
+      // New callbacks for scanning and pairing
+      onDiscovered: (BluetoothDevice device) {
+        setState(() {
+          // Handle newly discovered device
+        });
+      },
+      onScanComplete: () {
+        setState(() {
+          // Handle scan completion
+        });
+      },
+      onPaired: (String address, bool success) {
+        setState(() {
+          // Handle pairing result
+        });
+      },
     );
   }
 }
@@ -106,25 +124,81 @@ Future<void> _checkPermissions() async {
   
   if (allGranted) {
     // Permissions granted, proceed with scanning
-    _getDevices();
+    _startScan();
   } else {
     // Show a dialog explaining why permissions are needed
   }
 }
 ```
 
-### Scan for Bluetooth Devices
+### Scan for Bluetooth Devices (Including Unpaired Devices)
 
 ```dart
-Future<void> _getDevices() async {
+// Get only paired devices (old method)
+Future<void> _getPairedDevices() async {
   try {
     final devices = await _printer.getBluetoothDevices();
     setState(() {
       _devices = devices;
     });
   } catch (e) {
+    print('Error getting paired devices: $e');
+  }
+}
+
+// Scan for all available devices (new method)
+Future<void> _startScan() async {
+  try {
+    setState(() {
+      _isScanning = true;
+      _devices = []; // Clear existing devices
+    });
+    
+    // Start scanning with a 10-second timeout
+    // Devices will be delivered via the onDiscovered callback
+    await _printer.startScan(timeout: const Duration(seconds: 10));
+  } catch (e) {
+    setState(() {
+      _isScanning = false;
+    });
     print('Error scanning for devices: $e');
   }
+}
+
+// Stop an ongoing scan
+Future<void> _stopScan() async {
+  if (_isScanning) {
+    await _printer.stopScan();
+    setState(() {
+      _isScanning = false;
+    });
+  }
+}
+```
+
+### Pair with a Bluetooth Device
+
+```dart
+Future<void> _pairDevice(String address) async {
+  try {
+    // First check if already paired
+    final isPaired = await _printer.isDevicePaired(address);
+    
+    if (isPaired) {
+      print('Device is already paired');
+      return;
+    }
+    
+    // Initiate pairing - result will be delivered via onPaired callback
+    await _printer.pairDevice(address);
+  } catch (e) {
+    print('Error pairing device: $e');
+  }
+}
+
+// Check if a device is paired
+Future<bool> _checkPairingStatus(String address) async {
+  return await _printer.isDevicePaired(address);
 }
 ```
 
@@ -133,6 +207,18 @@ Future<void> _getDevices() async {
 ```dart
 Future<void> _connect(BluetoothDevice device) async {
   try {
+    // Check if device is paired first
+    final isPaired = await _printer.isDevicePaired(device.address);
+    
+    if (!isPaired) {
+      // Pair the device first
+      await _pairDevice(device.address);
+      
+      // Wait a moment for pairing to complete
+      await Future.delayed(const Duration(seconds: 1));
+    }
+    
+    // Now connect to the device
     final connected = await _printer.connectBluetooth(device.address);
     setState(() {
       _isConnected = connected;
@@ -181,8 +267,6 @@ await _printer.printText(
 await _printer.printQRCode(
   "https://example.com",
   moduleSize: 7,  // QR code size (1-16)
-  height: 200,
-  position: FlutterSf380rPrinter.POSITION_BELOW,
   alignment: FlutterSf380rPrinter.ALIGN_CENTER, // Center the QR code
 );
 ```
@@ -289,6 +373,8 @@ await _printer.disconnect();
 
 ## Example App
 
+Here's a complete example that includes device scanning, pairing, and connection:
+
 ```dart
 import 'package:flutter/material.dart';
 import 'package:flutter_sf380r_printer/flutter_sf380r_printer.dart';
@@ -310,6 +396,7 @@ class _MyAppState extends State<MyApp> {
   List<BluetoothDevice> _devices = [];
   BluetoothDevice? _selectedDevice;
   bool _isConnected = false;
+  bool _isScanning = false;
   String _status = 'Ready';
   
   @override
@@ -358,22 +445,110 @@ class _MyAppState extends State<MyApp> {
           _status = 'Printer disconnected';
         });
       },
+      onDiscovered: (BluetoothDevice device) {
+        setState(() {
+          if (!_devices.any((d) => d.address == device.address)) {
+            _devices.add(device);
+            _status = 'Found ${_devices.length} devices';
+          }
+        });
+      },
+      onScanComplete: () {
+        setState(() {
+          _isScanning = false;
+          _status = 'Scan completed, found ${_devices.length} devices';
+        });
+      },
+      onPaired: (String address, bool success) {
+        setState(() {
+          if (success) {
+            _status = 'Device paired successfully';
+          } else {
+            _status = 'Pairing failed';
+          }
+        });
+      },
     );
   }
 
-  Future<void> _getDevices() async {
+  Future<void> _startScan() async {
     try {
+      // Check permissions before scanning
+      final permissionsGranted = await [
+        Permission.bluetooth,
+        Permission.bluetoothConnect,
+        Permission.bluetoothScan,
+        Permission.location,
+      ].request().then(
+        (value) => !value.values.any(
+          (status) => status.isDenied || status.isPermanentlyDenied
+        )
+      );
+      
+      if (!permissionsGranted) {
+        setState(() {
+          _status = 'Bluetooth permissions required';
+        });
+        return;
+      }
+
       setState(() {
         _status = 'Scanning for devices...';
+        _isScanning = true;
+        _devices = []; // Clear previous devices
       });
-      final devices = await _printer.getBluetoothDevices();
-      setState(() {
-        _devices = devices;
-        _status = 'Found ${devices.length} devices';
-      });
+
+      // Start scanning with a timeout of 10 seconds
+      await _printer.startScan(timeout: const Duration(seconds: 10));
     } catch (e) {
       setState(() {
+        _isScanning = false;
         _status = 'Error: $e';
+      });
+    }
+  }
+
+  Future<void> _stopScan() async {
+    if (_isScanning) {
+      try {
+        await _printer.stopScan();
+        setState(() {
+          _isScanning = false;
+          _status = 'Scan stopped, found ${_devices.length} devices';
+        });
+      } catch (e) {
+        setState(() {
+          _status = 'Error stopping scan: $e';
+        });
+      }
+    }
+  }
+
+  Future<void> _pairDevice() async {
+    if (_selectedDevice == null) return;
+
+    try {
+      setState(() {
+        _status = 'Pairing with ${_selectedDevice!.name}...';
+      });
+
+      // Check if already paired
+      final isPaired = await _printer.isDevicePaired(_selectedDevice!.address);
+      
+      if (isPaired) {
+        setState(() {
+          _status = 'Device is already paired';
+        });
+        return;
+      }
+
+      // Initiate pairing
+      await _printer.pairDevice(_selectedDevice!.address);
+      
+      // Result will be handled by the onPaired callback
+    } catch (e) {
+      setState(() {
+        _status = 'Error pairing: $e';
       });
     }
   }
@@ -385,6 +560,43 @@ class _MyAppState extends State<MyApp> {
       setState(() {
         _status = 'Connecting...';
       });
+
+      // First check if the device is paired
+      final isPaired = await _printer.isDevicePaired(_selectedDevice!.address);
+      
+      if (!isPaired) {
+        // Show a dialog to prompt for pairing
+        final shouldPair = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Pairing Required'),
+            content: Text('Device ${_selectedDevice!.name} is not paired. Pair now?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Pair'),
+              ),
+            ],
+          ),
+        ) ?? false;
+
+        if (shouldPair) {
+          await _pairDevice();
+          
+          // Wait a moment after pairing before connecting
+          await Future.delayed(const Duration(seconds: 1));
+        } else {
+          setState(() {
+            _status = 'Connection canceled - device not paired';
+          });
+          return;
+        }
+      }
+
       final connected = await _printer.connectBluetooth(_selectedDevice!.address);
       if (!connected) {
         setState(() {
@@ -464,9 +676,25 @@ class _MyAppState extends State<MyApp> {
               
               const SizedBox(height: 16),
               
-              ElevatedButton(
-                onPressed: _getDevices,
-                child: const Text('Search for Printers'),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isScanning ? null : _startScan,
+                      child: Text(_isScanning ? 'Scanning...' : 'Search for Printers'),
+                    ),
+                  ),
+                  if (_isScanning) ...[
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: _stopScan,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
+                      child: const Text('Stop Scan', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ],
               ),
               
               const SizedBox(height: 16),
@@ -479,7 +707,23 @@ class _MyAppState extends State<MyApp> {
                     return ListTile(
                       title: Text(device.name),
                       subtitle: Text(device.address),
-                      trailing: Text(device.isPrinter ? 'Printer' : 'Device'),
+                      trailing: FutureBuilder<bool>(
+                        future: _printer.isDevicePaired(device.address),
+                        builder: (context, snapshot) {
+                          final isPaired = snapshot.data ?? false;
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(device.isPrinter ? 'Printer' : 'Device'),
+                              const SizedBox(width: 8),
+                              Icon(
+                                isPaired ? Icons.link : Icons.link_off,
+                                color: isPaired ? Colors.green : Colors.grey,
+                              ),
+                            ],
+                          );
+                        },
+                      ),
                       selected: _selectedDevice?.address == device.address,
                       onTap: () {
                         setState(() {
@@ -491,25 +735,30 @@ class _MyAppState extends State<MyApp> {
                 ),
               ),
               
-              if (_selectedDevice != null)
+              if (_selectedDevice != null) ...[
                 Text('Selected: ${_selectedDevice!.name}', 
-                     style: TextStyle(fontWeight: FontWeight.bold)),
-              
-              const SizedBox(height: 16),
-              
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    onPressed: _isConnected ? null : _connect,
-                    child: const Text('Connect'),
-                  ),
-                  ElevatedButton(
-                    onPressed: _isConnected ? _disconnect : null,
-                    child: const Text('Disconnect'),
-                  ),
-                ],
-              ),
+                     style: const TextStyle(fontWeight: FontWeight.bold)),
+                
+                const SizedBox(height: 16),
+                
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _isConnected ? null : _pairDevice,
+                      child: const Text('Pair Device'),
+                    ),
+                    ElevatedButton(
+                      onPressed: _isConnected ? null : _connect,
+                      child: const Text('Connect'),
+                    ),
+                    ElevatedButton(
+                      onPressed: _isConnected ? _disconnect : null,
+                      child: const Text('Disconnect'),
+                    ),
+                  ],
+                ),
+              ],
               
               const SizedBox(height: 16),
               
@@ -538,16 +787,27 @@ class _MyAppState extends State<MyApp> {
    - Ensure Bluetooth is enabled on your device.
    - Check if the printer is powered on and in discovery mode.
 
-3. **Connection Fails**
+3. **Pairing Issues**
+   - Some devices require a PIN code for pairing. The default PIN for many thermal printers is '0000' or '1234'.
+   - If pairing fails, try power cycling the printer and trying again.
+   - Ensure the printer is in pairing mode (many printers indicate this with a flashing LED).
+
+4. **Connection Fails**
    - Verify the printer is charged or plugged in.
    - Try restarting the printer.
    - Make sure no other devices are currently connected to the printer.
+   - Ensure you've paired with the device before trying to connect.
 
-4. **Formatting Issues**
+5. **Scan Not Finding Devices**
+   - Check that location services are enabled (required for Bluetooth scanning on Android).
+   - Ensure the printer is in discovery mode.
+   - Some devices may only be discoverable for a limited time after entering discovery mode.
+
+6. **Formatting Issues**
    - Different printer models may support different formatting features. Test basic printing first, then add formatting.
    - Some printers require a delay between commands for proper formatting.
 
-5. **Images Not Printing Correctly**
+7. **Images Not Printing Correctly**
    - Make sure the image is not too large (keep under 384px width for most thermal printers).
    - Try to use simple black and white images for best results.
 

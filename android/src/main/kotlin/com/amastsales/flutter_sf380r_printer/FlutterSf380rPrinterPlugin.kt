@@ -1,11 +1,8 @@
 package com.amastsales.flutter_sf380r_printer
 
-
 import android.bluetooth.BluetoothClass
 import android.content.Context
 import android.bluetooth.BluetoothManager
-
-
 
 import android.os.Handler
 import android.os.Looper
@@ -22,6 +19,7 @@ class FlutterSf380rPrinterPlugin: FlutterPlugin, MethodCallHandler {
   private lateinit var context: Context
   private lateinit var bluetoothOperation: BluetoothOperation
   private lateinit var deviceList: BluetoothDeviceList
+  private lateinit var bluetoothScanner: BluetoothScanner
   private lateinit var handler: Handler
 
   override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
@@ -30,6 +28,8 @@ class FlutterSf380rPrinterPlugin: FlutterPlugin, MethodCallHandler {
     context = flutterPluginBinding.applicationContext
 
     deviceList = BluetoothDeviceList()
+    bluetoothScanner = BluetoothScanner(context, deviceList)
+    bluetoothScanner.setMethodChannel(channel)
 
     handler = Handler(Looper.getMainLooper()) { msg ->
       when (msg.what) {
@@ -88,6 +88,33 @@ class FlutterSf380rPrinterPlugin: FlutterPlugin, MethodCallHandler {
         } catch (e: Exception) {
           result.error("BLUETOOTH_ERROR", e.message, null)
         }
+      }
+
+      "startScan" -> {
+        val timeout = call.argument<Int>("timeout") ?: 10000
+        bluetoothScanner.startScan(result, timeout.toLong())
+      }
+
+      "stopScan" -> {
+        bluetoothScanner.stopScan(result)
+      }
+
+      "pairDevice" -> {
+        val address = call.argument<String>("address")
+        if (address == null) {
+          result.error("INVALID_ARGUMENT", "Bluetooth address is required", null)
+          return
+        }
+        bluetoothScanner.pairDevice(address, result)
+      }
+
+      "isDevicePaired" -> {
+        val address = call.argument<String>("address")
+        if (address == null) {
+          result.error("INVALID_ARGUMENT", "Bluetooth address is required", null)
+          return
+        }
+        bluetoothScanner.isDevicePaired(address, result)
       }
 
       "connectBluetooth" -> {
@@ -252,5 +279,6 @@ class FlutterSf380rPrinterPlugin: FlutterPlugin, MethodCallHandler {
   override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     channel.setMethodCallHandler(null)
     bluetoothOperation.disconnect()
+    bluetoothScanner.cleanup()
   }
 }
