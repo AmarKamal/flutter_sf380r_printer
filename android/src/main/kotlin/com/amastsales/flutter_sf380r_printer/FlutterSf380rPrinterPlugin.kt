@@ -149,7 +149,6 @@ class FlutterSf380rPrinterPlugin: FlutterPlugin, MethodCallHandler {
         }
       }
 
-
       "printText" -> {
         val text = call.argument<String>("text")
         val alignment = call.argument<Int>("alignment") ?: 0
@@ -179,7 +178,6 @@ class FlutterSf380rPrinterPlugin: FlutterPlugin, MethodCallHandler {
           result.error("PRINT_ERROR", e.message, null)
         }
       }
-
 
       "printQRCode" -> {
         val content = call.argument<String>("content") ?: ""
